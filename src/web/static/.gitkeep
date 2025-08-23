@@ -1,0 +1,4 @@
+# Static Files Directory
+
+This directory contains static assets for the web interface.
+Created for Vercel serverless deployment compatibility.

@@ -137,8 +137,14 @@ static_dir = Path(__file__).parent / "web" / "static"
 
 templates = Jinja2Templates(directory=str(templates_dir))
 
-# Create static directory if it doesn't exist
-static_dir.mkdir(parents=True, exist_ok=True)
+# For serverless environments, don't try to create directories
+# Create static directory if it doesn't exist (only in writable environments)
+try:
+    static_dir.mkdir(parents=True, exist_ok=True)
+    can_write = True
+except (OSError, PermissionError):
+    # Read-only file system (like Vercel serverless)
+    can_write = False
 
 # Mount static files if directory exists
 if static_dir.exists():

@@ -34,9 +34,19 @@ class CleanRAGEngine:
         self.entries: List[VocabularyEntry] = []
         self.feedback_dir = "feedback_data"
         
-        # Create directories
-        os.makedirs(self.data_dir, exist_ok=True)
-        os.makedirs(self.feedback_dir, exist_ok=True)
+        # In-memory storage for serverless environments
+        self.negative_examples = []
+        self.positive_examples = []
+        
+        # Create directories (handle read-only file systems)
+        try:
+            os.makedirs(self.data_dir, exist_ok=True)
+            os.makedirs(self.feedback_dir, exist_ok=True)
+            self.can_write = True
+        except (OSError, PermissionError):
+            # Read-only file system (like Vercel serverless)
+            self.can_write = False
+            logger.info("Read-only file system detected - using in-memory storage")
         
         # Load initial data
         self._load_sample_entries()
@@ -151,31 +161,63 @@ class CleanRAGEngine:
     
     def add_negative_example(self, word: str, bad_example: str):
         """Store negative feedback to avoid similar mistakes"""
-        neg_file = os.path.join(self.feedback_dir, "negative_examples.txt")
         timestamp = datetime.now().isoformat()
         
-        try:
-            with open(neg_file, 'a', encoding='utf-8') as f:
-                f.write(f"\n=== NEGATIVE EXAMPLE - {word} - {timestamp} ===\n")
-                f.write(bad_example)
-                f.write("\n" + "="*50 + "\n")
-            logger.info(f"Stored negative example for {word}")
-        except Exception as e:
-            logger.error(f"Error storing negative example: {e}")
+        if self.can_write:
+            # Try to save to file
+            neg_file = os.path.join(self.feedback_dir, "negative_examples.txt")
+            try:
+                with open(neg_file, 'a', encoding='utf-8') as f:
+                    f.write(f"\n=== NEGATIVE EXAMPLE - {word} - {timestamp} ===\n")
+                    f.write(bad_example)
+                    f.write("\n" + "="*50 + "\n")
+                logger.info(f"Stored negative example for {word} to file")
+            except Exception as e:
+                logger.error(f"Error storing negative example to file: {e}")
+                # Fallback to memory
+                self.negative_examples.append({
+                    'word': word,
+                    'example': bad_example,
+                    'timestamp': timestamp
+                })
+        else:
+            # Store in memory for serverless
+            self.negative_examples.append({
+                'word': word,
+                'example': bad_example,
+                'timestamp': timestamp
+            })
+            logger.info(f"Stored negative example for {word} in memory")
     
     def add_positive_example(self, word: str, good_example: str):
         """Store positive feedback as learning examples"""
-        pos_file = os.path.join(self.feedback_dir, "positive_examples.txt")
         timestamp = datetime.now().isoformat()
         
-        try:
-            with open(pos_file, 'a', encoding='utf-8') as f:
-                f.write(f"\n=== POSITIVE EXAMPLE - {word} - {timestamp} ===\n")
-                f.write(good_example)
-                f.write("\n" + "="*50 + "\n")
-            logger.info(f"Stored positive example for {word}")
-        except Exception as e:
-            logger.error(f"Error storing positive example: {e}")
+        if self.can_write:
+            # Try to save to file
+            pos_file = os.path.join(self.feedback_dir, "positive_examples.txt")
+            try:
+                with open(pos_file, 'a', encoding='utf-8') as f:
+                    f.write(f"\n=== POSITIVE EXAMPLE - {word} - {timestamp} ===\n")
+                    f.write(good_example)
+                    f.write("\n" + "="*50 + "\n")
+                logger.info(f"Stored positive example for {word} to file")
+            except Exception as e:
+                logger.error(f"Error storing positive example to file: {e}")
+                # Fallback to memory
+                self.positive_examples.append({
+                    'word': word,
+                    'example': good_example,
+                    'timestamp': timestamp
+                })
+        else:
+            # Store in memory for serverless
+            self.positive_examples.append({
+                'word': word,
+                'example': good_example,
+                'timestamp': timestamp
+            })
+            logger.info(f"Stored positive example for {word} in memory")
     
     def get_feedback_context(self, word: str) -> str:
         """Get feedback context to improve generation"""
