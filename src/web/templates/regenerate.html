@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regenerate {{ word|title }} - SAT Vocabulary AI System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+        
+        .back-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        .regenerate-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .radio-option:hover {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+        }
+        
+        .radio-option input[type="radio"] {
+            margin: 0;
+        }
+        
+        .radio-option.selected {
+            border-color: #667eea;
+            background-color: #e8ecff;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .help-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .warning-box h3 {
+            margin: 0 0 0.5rem 0;
+            color: #856404;
+        }
+        
+        .warning-box p {
+            margin: 0;
+            color: #856404;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="back-link">← Back to Home</a>
+        <h1>🔄 Regenerate Entry for {{ word|title }}</h1>
+        <p>Help improve the system by providing feedback on what needs to be changed</p>
+    </div>
+
+    <div class="warning-box">
+        <h3>⚠️ Important</h3>
+        <p>Feedback is mandatory for regeneration. Your input helps the AI system learn and avoid similar issues in future generations.</p>
+    </div>
+
+    <div class="regenerate-form">
+        <form id="regenerateForm" action="/regenerate" method="post">
+            <input type="hidden" name="word" value="{{ word }}">
+            
+            <div class="form-group">
+                <label for="part_of_speech">Part of Speech</label>
+                <select name="part_of_speech" id="part_of_speech">
+                    <option value="noun">Noun</option>
+                    <option value="verb">Verb</option>
+                    <option value="adjective">Adjective</option>
+                    <option value="adverb">Adverb</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Why are you regenerating '{{ word }}'? *</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="reason1" name="regeneration_reason" value="confusing_mnemonic" required>
+                        <label for="reason1">Mnemonic was confusing or unhelpful</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="reason2" name="regeneration_reason" value="incorrect_definition" required>
+                        <label for="reason2">Definition was incorrect or unclear</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="reason3" name="regeneration_reason" value="boring_picture" required>
+                        <label for="reason3">Picture story was boring or unrelated</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="reason4" name="regeneration_reason" value="poor_example" required>
+                        <label for="reason4">Example sentence was poor</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="reason5" name="regeneration_reason" value="low_overall_quality" required>
+                        <label for="reason5">Overall quality was low</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="reason6" name="regeneration_reason" value="other" required>
+                        <label for="reason6">Other (please specify)</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group" id="specific-issue-group">
+                <label for="specific_issue">Specific Issue (optional)</label>
+                <textarea name="specific_issue" id="specific_issue" placeholder="Describe the specific problem with the current entry..."></textarea>
+                <div class="help-text">This helps the AI understand exactly what went wrong.</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="improvement_suggestions">What improvements would you like to see? *</label>
+                <textarea name="improvement_suggestions" id="improvement_suggestions" required placeholder="Describe what you'd like to see improved..."></textarea>
+                <div class="help-text">Be specific about what would make the entry better.</div>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="use_simple" value="true" checked>
+                    Use simple generator (faster, optimized)
+                </label>
+            </div>
+            
+            <button type="submit" class="btn">🔄 Regenerate Entry</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Regenerating entry with your feedback...</p>
+        </div>
+    </div>
+
+    <script>
+        // Handle radio button selection styling
+        document.querySelectorAll('input[name="regeneration_reason"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                // Remove selected class from all options
+                document.querySelectorAll('.radio-option').forEach(option => {
+                    option.classList.remove('selected');
+                });
+                
+                // Add selected class to current option
+                this.closest('.radio-option').classList.add('selected');
+                
+                // Show/hide specific issue field for "other"
+                const specificIssueGroup = document.getElementById('specific-issue-group');
+                if (this.value === 'other') {
+                    specificIssueGroup.style.display = 'block';
+                    document.getElementById('specific_issue').required = true;
+                } else {
+                    document.getElementById('specific_issue').required = false;
+                }
+            });
+        });
+        
+        // Handle form submission
+        document.getElementById('regenerateForm').addEventListener('submit', function(e) {
+            const loadingDiv = document.getElementById('loading');
+            const form = this;
+            
+            // Show loading state
+            form.style.display = 'none';
+            loadingDiv.style.display = 'block';
+            
+            // Let the form submit naturally
+            // The loading will persist until the new page loads
+        });
+        
+        // Validate form before submission
+        document.getElementById('regenerateForm').addEventListener('submit', function(e) {
+            const reason = document.querySelector('input[name="regeneration_reason"]:checked');
+            const suggestions = document.getElementById('improvement_suggestions').value.trim();
+            
+            if (!reason) {
+                e.preventDefault();
+                alert('Please select a reason for regeneration.');
+                return;
+            }
+            
+            if (!suggestions) {
+                e.preventDefault();
+                alert('Please provide improvement suggestions.');
+                return;
+            }
+            
+            if (reason.value === 'other') {
+                const specificIssue = document.getElementById('specific_issue').value.trim();
+                if (!specificIssue) {
+                    e.preventDefault();
+                    alert('Please specify the issue when selecting "Other".');
+                    return;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

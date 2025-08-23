@@ -1,0 +1,32 @@
+from random import choice
+
+def generate_mnemonic(word, definition):
+    """
+    Generate a mnemonic for a given word and its definition.
+    
+    Parameters:
+    word (str): The vocabulary word.
+    definition (str): The definition of the word.
+    
+    Returns:
+    str: A creative mnemonic to help remember the word.
+    """
+    # Simple mnemonic structure
+    mnemonic_structure = [
+        f"To remember '{word}', think of '{definition}'.",
+        f"Imagine '{word}' as '{definition}'.",
+        f"Picture '{word}' meaning '{definition}'.",
+        f"Connect '{word}' with '{definition}' by visualizing it."
+    ]
+    
+    return choice(mnemonic_structure)
+
+def main():
+    # Example usage
+    word = "benevolent"
+    definition = "kindhearted; good-natured; generous"
+    mnemonic = generate_mnemonic(word, definition)
+    print(mnemonic)
+
+if __name__ == "__main__":
+    main()

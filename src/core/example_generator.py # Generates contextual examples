@@ -1,0 +1,59 @@
+from random import choice
+
+class ExampleGenerator:
+    def __init__(self):
+        self.examples = {
+            "acclaim": [
+                "The author received great acclaim for her latest novel.",
+                "His performance was met with loud acclaim from the audience."
+            ],
+            "accolade": [
+                "The scientist received an accolade for her groundbreaking research.",
+                "Winning the award was a significant accolade in his career."
+            ],
+            "acquiescent": [
+                "Despite her reservations, she remained acquiescent to the group's decision.",
+                "His acquiescent attitude made it easy for others to lead."
+            ],
+            "acrimony": [
+                "The debate was filled with acrimony and personal attacks.",
+                "Their divorce was marked by acrimony and bitterness."
+            ],
+            "adamant": [
+                "She was adamant about not changing her mind.",
+                "He remained adamant in his refusal to negotiate."
+            ],
+            "adroitness": [
+                "Her adroitness in handling difficult situations impressed everyone.",
+                "The adroit maneuvering of the car avoided a potential accident."
+            ],
+            "advocate": [
+                "He is a strong advocate for environmental protection.",
+                "As an advocate for education reform, she spoke at several conferences."
+            ],
+            "affable": [
+                "His affable nature made him popular among his peers.",
+                "The affable host welcomed everyone with a warm smile."
+            ],
+            "affirmation": [
+                "The team's victory was an affirmation of their hard work.",
+                "She sought affirmation from her friends about her decision."
+            ],
+            "alienate": [
+                "His rude comments began to alienate his friends.",
+                "The new policies may alienate long-time customers."
+            ],
+            # Add more vocabulary words and examples as needed
+        }
+
+    def generate_example(self, word):
+        if word in self.examples:
+            return choice(self.examples[word])
+        else:
+            return "No example available for this word."
+
+# Example usage
+if __name__ == "__main__":
+    generator = ExampleGenerator()
+    print(generator.generate_example("acclaim"))
+    print(generator.generate_example("accolade"))

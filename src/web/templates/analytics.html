@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - SAT Vocabulary AI System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+        
+        .back-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 1rem;
+            margin: 0;
+        }
+        
+        .quality-score {
+            color: #667eea;
+        }
+        
+        .feedback-count {
+            color: #00b894;
+        }
+        
+        .satisfaction-score {
+            color: #fdcb6e;
+        }
+        
+        .recommendation-rate {
+            color: #e17055;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 2rem;
+        }
+        
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 20px;
+            margin: 0.5rem 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        
+        .component-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .component-name {
+            font-weight: 500;
+        }
+        
+        .component-score {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 1rem 0;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .last-updated {
+            color: #666;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .metric-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="back-link">← Back to Home</a>
+        <h1>📊 Analytics Dashboard</h1>
+        <p>Quality metrics and user feedback insights</p>
+    </div>
+
+    <div class="analytics-grid">
+        <div class="metric-card">
+            <div class="metric-value quality-score">{{ "%.1f"|format(analytics.get('average_quality_score', 0)) }}</div>
+            <p class="metric-label">Average Quality Score</p>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-value feedback-count">{{ analytics.get('total_entries', 0) }}</div>
+            <p class="metric-label">Total Entries Generated</p>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-value satisfaction-score">{{ "%.1f"|format(analytics.get('average_user_satisfaction', 0)) }}</div>
+            <p class="metric-label">Average User Satisfaction</p>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-value recommendation-rate">{{ "%.1f"|format(analytics.get('recommendation_rate', 0) * 100) }}%</div>
+            <p class="metric-label">Recommendation Rate</p>
+        </div>
+    </div>
+
+    {% if analytics.get('component_scores') %}
+    <div class="chart-container">
+        <h3 class="chart-title">Quality Components Performance</h3>
+        {% for component, score in analytics.get('component_scores', {}).items() %}
+        <div class="component-item">
+            <span class="component-name">{{ component|title }}</span>
+            <span class="component-score">{{ "%.1f"|format(score) }}/10</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ (score/10)*100 }}%"></div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if analytics.get('recent_feedback') %}
+    <div class="chart-container">
+        <h3 class="chart-title">Recent User Feedback</h3>
+        {% for feedback in analytics.get('recent_feedback', [])[:5] %}
+        <div class="component-item" style="border-bottom: 1px solid #eee; padding-bottom: 1rem;">
+            <div>
+                <strong>{{ feedback.word|title }}</strong> - Satisfaction: {{ feedback.satisfaction_score }}/10
+                {% if feedback.user_comments %}
+                <p style="margin: 0.5rem 0 0 0; color: #666; font-style: italic;">"{{ feedback.user_comments }}"</p>
+                {% endif %}
+            </div>
+            <span style="color: {% if feedback.would_recommend %}#00b894{% else %}#e17055{% endif %};">
+                {% if feedback.would_recommend %}✓ Recommended{% else %}⚠ Not Recommended{% endif %}
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="chart-container">
+        <h3 class="chart-title">Recent User Feedback</h3>
+        <div class="no-data">No feedback data available yet. Generate some vocabulary entries and collect feedback to see insights here!</div>
+    </div>
+    {% endif %}
+
+    <div style="text-align: center;">
+        <button class="refresh-btn" onclick="window.location.reload()">🔄 Refresh Data</button>
+        <div class="last-updated">Last updated: {{ analytics.get('last_updated', 'Unknown') }}</div>
+    </div>
+
+    <script>
+        // Auto-refresh every 30 seconds
+        setTimeout(() => {
+            window.location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>

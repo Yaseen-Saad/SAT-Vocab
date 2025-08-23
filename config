@@ -1,0 +1,86 @@
+# Configuration file for the SAT Vocabulary RAG application
+
+app:
+  name: SAT Vocabulary RAG
+  version: 1.0.0
+  description: An AI-based system for generating vocabulary entries with mnemonics, pictures, and contextual examples.
+
+database:
+  uri: sqlite:///data/vocabulary.db
+  echo: true
+
+api:
+  version: v1
+  host: 0.0.0.0
+  port: 8000
+
+logging:
+  level: INFO
+  file: logs/app.log
+
+# AI Hackclub API Configuration
+hackclub_api:
+  url: https://ai.hackclub.com/v1
+  model: qwen/qwen3-32b
+  timeout: 30
+  max_retries: 3
+  max_tokens: 1000
+  temperature: 0.7
+
+# RAG Configuration
+rag:
+  top_k: 5
+  similarity_threshold: 0.7
+  max_context_length: 2000
+
+embedding:
+  model: sentence-transformers/all-MiniLM-L6-v2
+  dimension: 384
+  batch_size: 32
+
+# Generation Templates
+prompt_templates:
+  gulotta_style: |
+    Based on the following authentic Gulotta-style vocabulary examples:
+    
+    {examples}
+    
+    Create a vocabulary entry for the word "{word}" in the exact same style as Charles Gulotta. Include:
+    1. Word with pronunciation in parentheses
+    2. Part of speech and definition
+    3. Creative "Sounds like" or "Looks like" mnemonic
+    4. Vivid picture story that connects the mnemonic to the meaning
+    5. Other forms (if applicable)
+    6. Example sentence
+    
+    Make it authentic, creative, and memorable like Gulotta's style.
+  
+  definition_only: |
+    Create a clear, SAT-appropriate definition for the word "{word}". 
+    Context from similar words: {context}
+    
+    Definition should be:
+    - Precise and accurate
+    - Appropriate for SAT level
+    - Clear and concise
+  
+  example_sentence: |
+    Create a natural example sentence using the word "{word}" with definition: {definition}
+    
+    Context from similar usage: {context}
+    
+    The sentence should:
+    - Demonstrate proper usage
+    - Be contextually appropriate
+    - Sound natural and authentic
+
+# Quality Control
+quality_control:
+  min_mnemonic_length: 5
+  max_mnemonic_length: 20
+  required_components:
+    - pronunciation
+    - definition
+    - mnemonic
+    - picture
+    - example_sentence

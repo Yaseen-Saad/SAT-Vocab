@@ -1,0 +1,36 @@
+from typing import List, Dict
+import re
+
+def clean_text(text: str) -> str:
+    """Cleans the input text by removing unwanted characters and extra spaces."""
+    text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with a single space
+    return text.strip()  # Remove leading and trailing spaces
+
+def tokenize(text: str) -> List[str]:
+    """Tokenizes the input text into a list of words."""
+    text = clean_text(text)
+    return text.split(' ')
+
+def generate_mnemonic(word: str, definition: str) -> str:
+    """Generates a simple mnemonic for a vocabulary word based on its definition."""
+    mnemonic = f"To remember '{word}', think of: {definition}."
+    return mnemonic
+
+def format_example(sentence: str) -> str:
+    """Formats a contextual example sentence for better readability."""
+    return f"Example: {sentence}"
+
+def extract_keywords(text: str) -> List[str]:
+    """Extracts keywords from the input text."""
+    tokens = tokenize(text)
+    keywords = list(set(tokens))  # Remove duplicates
+    return keywords
+
+def summarize_entry(word: str, definition: str, example: str) -> Dict[str, str]:
+    """Summarizes a vocabulary entry into a structured format."""
+    return {
+        "word": word,
+        "definition": clean_text(definition),
+        "mnemonic": generate_mnemonic(word, definition),
+        "example": format_example(example)
+    }

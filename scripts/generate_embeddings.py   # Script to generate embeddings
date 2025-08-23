@@ -1,0 +1,40 @@
+import os
+import json
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from src.data.vocabulary import Vocabulary
+from src.data.embeddings import Embeddings
+from src.core.rag_engine import RAGEngine
+
+def generate_embeddings():
+    vocab = Vocabulary()
+    embeddings = Embeddings()
+    
+    # Load vocabulary words
+    words = vocab.get_all_words()
+    
+    # Generate embeddings for each word
+    word_embeddings = {}
+    for word in words:
+        # Here we would typically use a pre-trained model to generate embeddings
+        # For demonstration, we will use random vectors
+        embedding = np.random.rand(768)  # Example: 768-dimensional embedding
+        word_embeddings[word] = embedding
+    
+    # Store embeddings in the database
+    embeddings.store_embeddings(word_embeddings)
+
+    # Optionally, calculate similarity between words
+    similarities = {}
+    for word1, emb1 in word_embeddings.items():
+        for word2, emb2 in word_embeddings.items():
+            if word1 != word2:
+                sim = cosine_similarity([emb1], [emb2])[0][0]
+                similarities[(word1, word2)] = sim
+    
+    # Save similarities to a file for further analysis
+    with open(os.path.join('data', 'embeddings', 'similarities.json'), 'w') as f:
+        json.dump(similarities, f)
+
+if __name__ == "__main__":
+    generate_embeddings()

@@ -1,0 +1,30 @@
+
+NEGATIVE FEEDBACK FOR FRANK:
+Issue: boring_picture - 
+Avoid: gd
+This type of generation should be avoided for FRANK.
+==================================================
+
+NEGATIVE FEEDBACK FOR SERENE:
+Issue: poor_example - 
+Avoid: 
+This type of generation should be avoided for SERENE.
+==================================================
+
+NEGATIVE FEEDBACK FOR ARDENT:
+Issue: boring_picture - 
+Avoid: 
+This type of generation should be avoided for ARDENT.
+==================================================
+
+NEGATIVE FEEDBACK FOR RESISTANT:
+Issue: confusing_mnemonic - okay
+Avoid: more examples
+This type of generation should be avoided for RESISTANT.
+==================================================
+
+NEGATIVE FEEDBACK FOR RESISTANT:
+Issue: confusing_mnemonic - okay
+Avoid: more examples
+This type of generation should be avoided for RESISTANT.
+==================================================

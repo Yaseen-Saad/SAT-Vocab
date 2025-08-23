@@ -1,0 +1,34 @@
+from typing import Any, Dict
+
+class ImageService:
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+
+    def generate_image(self, word: str) -> Dict[str, Any]:
+        """
+        Generate an image for the given vocabulary word using an external image generation API.
+        
+        Args:
+            word (str): The vocabulary word for which to generate an image.
+        
+        Returns:
+            Dict[str, Any]: A dictionary containing the image URL and any additional metadata.
+        """
+        # Placeholder for API call to generate image
+        image_url = f"https://api.example.com/images/{word}"
+        return {
+            "word": word,
+            "image_url": image_url,
+            "description": f"Image representing the word '{word}'"
+        }
+
+    def log_image_generation(self, word: str, image_url: str) -> None:
+        """
+        Log the image generation event.
+        
+        Args:
+            word (str): The vocabulary word for which the image was generated.
+            image_url (str): The URL of the generated image.
+        """
+        # Placeholder for logging logic
+        print(f"Generated image for '{word}': {image_url}")

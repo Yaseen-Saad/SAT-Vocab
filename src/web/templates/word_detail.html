@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ word|title }} - SAT Vocabulary AI System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+        
+        .back-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        .vocab-entry {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .word-header {
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .word-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            margin: 0;
+        }
+        
+        .pronunciation {
+            font-size: 1.2rem;
+            color: #666;
+            font-style: italic;
+            margin: 0.5rem 0;
+        }
+        
+        .pos-definition {
+            font-size: 1.1rem;
+            color: #444;
+            margin: 0.5rem 0;
+        }
+        
+        .pos {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .entry-section {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+            border-radius: 0 6px 6px 0;
+        }
+        
+        .section-title {
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 0.5rem 0;
+            font-size: 1.1rem;
+        }
+        
+        .section-content {
+            margin: 0;
+            color: #555;
+        }
+        
+        .mnemonic {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+            border-left-color: #fdcb6e;
+        }
+        
+        .picture {
+            background: linear-gradient(135deg, #a8e6cf 0%, #88d8a3 100%);
+            border-left-color: #00b894;
+        }
+        
+        .example {
+            background: linear-gradient(135deg, #e17055 0%, #d63031 100%);
+            border-left-color: #e17055;
+            color: white;
+        }
+        
+        .example .section-title,
+        .example .section-content {
+            color: white;
+        }
+        
+        .quality-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #e8f4fd;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+        
+        .quality-score {
+            font-weight: 600;
+            color: #1a73e8;
+        }
+        
+        .validation-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .validation-passed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .validation-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .similar-entries {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .similar-entry {
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: #f8f9fa;
+        }
+        
+        .similar-word {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .similarity-score {
+            float: right;
+            background: #667eea;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .actions {
+            text-align: center;
+            margin: 2rem 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            margin: 0 0.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #636e72 0%, #2d3436 100%);
+        }
+        
+        .raw-output {
+            background: #f1f3f4;
+            border: 1px solid #dadce0;
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+        
+        .toggle-raw {
+            background: none;
+            border: 1px solid #667eea;
+            color: #667eea;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+        
+        .toggle-raw:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .rating-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .rating-input {
+            display: none;
+        }
+        
+        .rating-label {
+            display: inline-block;
+            padding: 0.5rem 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 40px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .rating-input:checked + .rating-label {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .rating-label:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .checkbox-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            transform: scale(1.2);
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .feedback-btn {
+            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+        }
+        
+        .feedback-btn:hover {
+            background: linear-gradient(135deg, #00a085 0%, #00b3b7 100%);
+        }
+        
+        .feedback-message {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+        
+        .feedback-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .feedback-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        @media (max-width: 768px) {
+            .quality-info {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .word-title {
+                font-size: 2rem;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                display: block;
+                margin: 0.5rem 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="back-link">← Back to Home</a>
+        <h1>Vocabulary Entry</h1>
+    </div>
+
+    <div class="vocab-entry">
+        <div class="word-header">
+            <h1 class="word-title">{{ entry.word.upper() }}</h1>
+            {% if entry.pronunciation %}
+            <div class="pronunciation">({{ entry.pronunciation }})</div>
+            {% endif %}
+            {% if entry.part_of_speech and entry.definition %}
+            <div class="pos-definition">
+                <span class="pos">{{ entry.part_of_speech }}</span> — {{ entry.definition }}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if entry.mnemonic_type and entry.mnemonic_phrase %}
+        <div class="entry-section mnemonic">
+            <div class="section-title">{{ entry.mnemonic_type }}</div>
+            <div class="section-content">{{ entry.mnemonic_phrase }}</div>
+        </div>
+        {% endif %}
+
+        {% if entry.picture_story %}
+        <div class="entry-section picture">
+            <div class="section-title">Picture</div>
+            <div class="section-content">{{ entry.picture_story }}</div>
+        </div>
+        {% endif %}
+
+        {% if entry.other_forms %}
+        <div class="entry-section">
+            <div class="section-title">Other Forms</div>
+            <div class="section-content">{{ entry.other_forms }}</div>
+        </div>
+        {% endif %}
+
+        {% if entry.example_sentence %}
+        <div class="entry-section example">
+            <div class="section-title">Example Sentence</div>
+            <div class="section-content">{{ entry.example_sentence }}</div>
+        </div>
+        {% endif %}
+
+        <div class="quality-info">
+            <span class="quality-score">Quality Score: {{ "%.1f"|format(entry.quality_score) }}/100</span>
+            <span class="validation-status {% if entry.validation_passed %}validation-passed{% else %}validation-failed{% endif %}">
+                {% if entry.validation_passed %}✓ Validation Passed{% else %}⚠ Needs Review{% endif %}
+            </span>
+        </div>
+
+        <button class="toggle-raw" onclick="toggleRawOutput()">Show Raw Generated Text</button>
+        <div id="raw-output" class="raw-output hidden">{{ entry.generated_text }}</div>
+    </div>
+
+    {% if is_regenerated %}
+    <!-- Regeneration Success Message -->
+    <div class="vocab-entry" style="background: linear-gradient(135deg, #00b894 0%, #00a085 100%); color: white;">
+        <h3 style="margin-top: 0; color: white;">🎉 Entry Successfully Regenerated!</h3>
+        <p style="color: rgba(255,255,255,0.9); margin-bottom: 1rem;">
+            The entry has been regenerated based on your feedback. The system has learned from the issues you identified:
+        </p>
+        {% if feedback_context %}
+        <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+            <strong>Issue addressed:</strong> {{ feedback_context.reason.replace('_', ' ').title() }}<br>
+            {% if feedback_context.specific_issue %}
+            <strong>Specific problem:</strong> {{ feedback_context.specific_issue }}<br>
+            {% endif %}
+            {% if feedback_context.improvement_suggestions %}
+            <strong>Improvements made:</strong> {{ feedback_context.improvement_suggestions }}
+            {% endif %}
+        </div>
+        {% endif %}
+        <p style="color: rgba(255,255,255,0.9); margin: 0;">
+            <strong>Your feedback below is crucial</strong> - it helps the system learn what works and what doesn't!
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Feedback Section -->
+    <div class="vocab-entry" id="feedback-section">
+        {% if is_regenerated %}
+        <h3 style="margin-top: 0; color: #00b894;">📊 Rate the Regenerated Entry</h3>
+        <p style="color: #666;">This feedback is <strong>mandatory</strong> and helps the system learn from regeneration. High ratings (7+) will be stored as positive examples for future generations.</p>
+        {% else %}
+        <h3 style="margin-top: 0; color: #667eea;">📝 Rate This Vocabulary Entry</h3>
+        <p style="color: #666;">Your feedback helps improve the AI system for future vocabulary generation.</p>
+        {% endif %}
+        
+        <form id="feedback-form">
+            <input type="hidden" id="feedback-word" value="{{ entry.word }}">
+            <input type="hidden" id="feedback-entry-id" value="{{ entry_id or entry.word + '_' + range(1000000) | random | string }}">
+            <input type="hidden" id="is-regenerated" value="{{ is_regenerated or 'false' }}">
+            
+            <div class="form-group">
+                <label for="satisfaction">Overall Satisfaction (0-10):</label>
+                <div class="rating-container">
+                    {% for i in range(11) %}
+                    <input type="radio" id="rating-{{ i }}" name="satisfaction" value="{{ i }}" class="rating-input">
+                    <label for="rating-{{ i }}" class="rating-label">{{ i }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Which components were helpful? (check all that apply):</label>
+                <div class="checkbox-container">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="helpful-mnemonic" value="mnemonic">
+                        <label for="helpful-mnemonic">Mnemonic Device</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="helpful-picture" value="picture story">
+                        <label for="helpful-picture">Picture Story</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="helpful-example" value="example sentence">
+                        <label for="helpful-example">Example Sentence</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="helpful-format" value="overall format">
+                        <label for="helpful-format">Overall Format</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="comments">Additional Comments (optional):</label>
+                <textarea id="comments" name="comments" rows="3" placeholder="Any suggestions for improvement or what you found particularly helpful..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="recommend" name="recommend">
+                    <label for="recommend">I would recommend this entry to other SAT students</label>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn feedback-btn">Submit Feedback</button>
+            <div id="feedback-message" class="feedback-message hidden"></div>
+        </form>
+    </div>
+
+    {% if similar_entries %}
+    <div class="similar-entries">
+        <h3>Similar Vocabulary Entries</h3>
+        {% for similar_entry, score in similar_entries %}
+        <div class="similar-entry">
+            <div class="similarity-score">{{ "%.1f"|format(score * 100) }}%</div>
+            <div class="similar-word">{{ similar_entry.word.upper() }}</div>
+            <div>{{ similar_entry.definition }}</div>
+            {% if similar_entry.mnemonic_phrase %}
+            <div style="font-style: italic; margin-top: 0.5rem;">{{ similar_entry.mnemonic_phrase }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="actions">
+        <a href="/" class="btn">Generate Another Word</a>
+        <a href="/regenerate/{{ entry.word }}" class="btn" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">🔄 Regenerate This Entry</a>
+        <a href="/api/generate" class="btn btn-secondary">View API Documentation</a>
+    </div>
+
+    <script>
+        function toggleRawOutput() {
+            const rawOutput = document.getElementById('raw-output');
+            const button = document.querySelector('.toggle-raw');
+            
+            if (rawOutput.classList.contains('hidden')) {
+                rawOutput.classList.remove('hidden');
+                button.textContent = 'Hide Raw Generated Text';
+            } else {
+                rawOutput.classList.add('hidden');
+                button.textContent = 'Show Raw Generated Text';
+            }
+        }
+        
+        // Handle feedback form submission
+        document.getElementById('feedback-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const word = document.getElementById('feedback-word').value;
+            const entryId = document.getElementById('feedback-entry-id').value;
+            const isRegenerated = document.getElementById('is-regenerated').value === 'true';
+            const satisfaction = formData.get('satisfaction');
+            const comments = formData.get('comments') || '';
+            const recommend = formData.get('recommend') === 'on';
+            
+            // Get helpful components
+            const helpfulComponents = [];
+            document.querySelectorAll('input[type="checkbox"][value]:not([name="recommend"]):checked').forEach(cb => {
+                helpfulComponents.push(cb.value);
+            });
+            
+            // Validate required fields
+            if (!satisfaction) {
+                showFeedbackMessage('Please select a satisfaction rating.', 'error');
+                return;
+            }
+            
+            try {
+                // Use different endpoint for regenerated entries
+                const endpoint = isRegenerated ? '/api/feedback/regenerated' : '/api/feedback';
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        word: word,
+                        entry_id: entryId,
+                        satisfaction_score: parseInt(satisfaction),
+                        helpful_components: helpfulComponents,
+                        problematic_components: [], // Could be expanded later
+                        user_comments: comments,
+                        would_recommend: recommend
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    let message = 'Thank you for your feedback! This helps improve the system.';
+                    if (isRegenerated && parseInt(satisfaction) >= 7) {
+                        message += ' This high-quality entry has been stored as a positive example for future generations.';
+                    }
+                    
+                    showFeedbackMessage(message, 'success');
+                    document.getElementById('feedback-form').style.opacity = '0.6';
+                    document.getElementById('feedback-form').style.pointerEvents = 'none';
+                } else {
+                    showFeedbackMessage('Error submitting feedback. Please try again.', 'error');
+                }
+            } catch (error) {
+                console.error('Feedback submission error:', error);
+                showFeedbackMessage('Error submitting feedback. Please try again.', 'error');
+            }
+        });
+        
+        function showFeedbackMessage(message, type) {
+            const messageDiv = document.getElementById('feedback-message');
+            messageDiv.textContent = message;
+            messageDiv.className = `feedback-message feedback-${type}`;
+            messageDiv.classList.remove('hidden');
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageDiv.classList.add('hidden');
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

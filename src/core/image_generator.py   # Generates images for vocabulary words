@@ -1,0 +1,33 @@
+from PIL import Image, ImageDraw, ImageFont
+import os
+
+class ImageGenerator:
+    def __init__(self, output_dir='output_images'):
+        self.output_dir = output_dir
+        os.makedirs(self.output_dir, exist_ok=True)
+
+    def generate_image(self, word, mnemonic, example):
+        # Create a blank image with white background
+        img = Image.new('RGB', (800, 400), color='white')
+        d = ImageDraw.Draw(img)
+
+        # Load a font
+        try:
+            font = ImageFont.truetype("arial.ttf", 24)
+        except IOError:
+            font = ImageFont.load_default()
+
+        # Draw the word, mnemonic, and example on the image
+        d.text((10, 10), f"Word: {word}", fill=(0, 0, 0), font=font)
+        d.text((10, 50), f"Mnemonic: {mnemonic}", fill=(0, 0, 0), font=font)
+        d.text((10, 100), f"Example: {example}", fill=(0, 0, 0), font=font)
+
+        # Save the image
+        img_path = os.path.join(self.output_dir, f"{word}.png")
+        img.save(img_path)
+        return img_path
+
+# Example usage:
+# generator = ImageGenerator()
+# image_path = generator.generate_image("Acrimony", "A acre of money", "Divorce proceedings are often filled with acrimony.")
+# print(f"Image saved at: {image_path}")

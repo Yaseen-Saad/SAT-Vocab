@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAT Vocabulary AI System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 0.5rem 0 0 0;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            min-width: 120px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .quick-examples {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+        
+        .quick-examples h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .example-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .example-word {
+            background: #667eea;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+        }
+        
+        .example-word:hover {
+            background: #5a6fd8;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .feature {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .feature h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .api-info {
+            background: #e8f4fd;
+            border: 1px solid #b3d9f7;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .api-info h4 {
+            margin-top: 0;
+            color: #1a73e8;
+        }
+        
+        code {
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SAT Vocabulary AI System</h1>
+        <p>Generate authentic Gulotta-style vocabulary entries using AI and RAG</p>
+    </div>
+
+    <div class="main-content">
+        <form action="/generate" method="post" id="generateForm">
+            <div class="form-group">
+                <label for="word">Enter a vocabulary word:</label>
+                <input type="text" id="word" name="word" placeholder="e.g., perspicacious, ineffable, sanguine..." required>
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="use_context" name="use_context" checked>
+                    <label for="use_context">Use context examples from Gulotta's authentic entries</label>
+                </div>
+            </div>
+            
+            <button type="submit">Generate Vocabulary Entry</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Generating authentic vocabulary entry... This may take a few moments.</p>
+        </div>
+    </div>
+
+    <div class="quick-examples">
+        <h3>Try these example words:</h3>
+        <div class="example-words">
+            <a href="/word/perspicacious" class="example-word">perspicacious</a>
+            <a href="/word/ineffable" class="example-word">ineffable</a>
+            <a href="/word/sanguine" class="example-word">sanguine</a>
+            <a href="/word/ubiquitous" class="example-word">ubiquitous</a>
+            <a href="/word/pernicious" class="example-word">pernicious</a>
+            <a href="/word/ameliorate" class="example-word">ameliorate</a>
+            <a href="/word/magnanimous" class="example-word">magnanimous</a>
+            <a href="/word/ephemeral" class="example-word">ephemeral</a>
+        </div>
+    </div>
+
+    <div class="features">
+        <div class="feature">
+            <h3>🎯 Authentic Style</h3>
+            <p>Generates vocabulary entries in Charles Gulotta's distinctive style with creative mnemonics and vivid picture stories.</p>
+        </div>
+        
+        <div class="feature">
+            <h3>🧠 Smart Context</h3>
+            <p>Uses RAG to analyze authentic examples and create contextually appropriate entries.</p>
+        </div>
+        
+        <div class="feature">
+            <h3>📚 SAT Ready</h3>
+            <p>All definitions and examples are crafted for SAT-level vocabulary preparation.</p>
+        </div>
+        
+        <div class="feature">
+            <h3>⚡ AI Powered</h3>
+            <p>Leverages advanced AI models to ensure creativity and educational value.</p>
+        </div>
+    </div>
+
+    <div class="api-info">
+        <h4>System Links</h4>
+        <p>Explore more features of the SAT Vocabulary AI System:</p>
+        <p><a href="/analytics" style="color: #1a73e8; text-decoration: none;">📊 Analytics Dashboard</a> - View quality metrics and user feedback</p>
+        <p><code>POST /api/generate</code> - Generate single entry</p>
+        <p><code>POST /api/batch-generate</code> - Generate multiple entries</p>
+        <p><code>POST /api/feedback</code> - Submit user feedback</p>
+        <p><code>GET /api/stats</code> - Get vocabulary statistics</p>
+    </div>
+
+    <script>
+        document.getElementById('generateForm').addEventListener('submit', function() {
+            document.getElementById('loading').style.display = 'block';
+        });
+        
+        // Auto-focus on the word input
+        document.getElementById('word').focus();
+        
+        // Handle Enter key in input
+        document.getElementById('word').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('generateForm').submit();
+            }
+        });
+    </script>
+</body>
+</html>

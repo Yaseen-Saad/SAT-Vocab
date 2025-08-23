@@ -1,0 +1,59 @@
+from typing import Any, Dict
+import requests
+
+class LLMService:
+    def __init__(self, api_key: str, api_url: str):
+        self.api_key = api_key
+        self.api_url = api_url
+
+    def generate_vocabulary_entry(self, word: str) -> Dict[str, Any]:
+        payload = {
+            "prompt": f"Generate a vocabulary entry for the word '{word}' including a definition, mnemonic, picture description, and example sentence.",
+            "max_tokens": 150
+        }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        response = requests.post(self.api_url, json=payload, headers=headers)
+        response.raise_for_status()
+        return response.json()
+
+    def get_mnemonic(self, word: str) -> str:
+        payload = {
+            "prompt": f"Create a mnemonic for the word '{word}'.",
+            "max_tokens": 50
+        }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        response = requests.post(self.api_url, json=payload, headers=headers)
+        response.raise_for_status()
+        return response.json().get("text", "")
+
+    def get_example_sentence(self, word: str) -> str:
+        payload = {
+            "prompt": f"Provide a contextual example sentence for the word '{word}'.",
+            "max_tokens": 50
+        }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        response = requests.post(self.api_url, json=payload, headers=headers)
+        response.raise_for_status()
+        return response.json().get("text", "")
+
+    def get_image_description(self, word: str) -> str:
+        payload = {
+            "prompt": f"Describe an image that represents the word '{word}'.",
+            "max_tokens": 50
+        }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        response = requests.post(self.api_url, json=payload, headers=headers)
+        response.raise_for_status()
+        return response.json().get("text", "")

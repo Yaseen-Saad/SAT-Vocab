@@ -1,0 +1,44 @@
+# Configuration file for the SAT Vocabulary RAG application
+
+app:
+  name: SAT Vocabulary RAG
+  version: 1.0.0
+  description: An AI-based system for generating vocabulary entries with mnemonics, images, and contextual examples.
+
+database:
+  uri: sqlite:///src/data/vocabulary.db
+  echo: true
+
+rag:
+  enable: true
+  model: gpt-3.5-turbo
+  max_tokens: 150
+
+mnemonic:
+  enable: true
+  method: creative
+
+example:
+  enable: true
+  method: contextual
+
+image:
+  enable: true
+  service: external_api
+  api_key: YOUR_API_KEY_HERE
+
+logging:
+  level: INFO
+  file: logs/app.log
+
+server:
+  host: 0.0.0.0
+  port: 5000
+
+api:
+  version: v1
+  prefix: /api
+
+web:
+  template_folder: src/web/templates
+  static_folder: src/web/static
