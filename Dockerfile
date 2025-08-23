@@ -16,6 +16,7 @@ COPY src/ ./src/
 RUN mkdir -p data/processed feedback_data
 
 # Copy startup script
+COPY start.py ./
 COPY start.sh ./
 RUN chmod +x start.sh
 
@@ -26,5 +27,5 @@ ENV PYTHONUNBUFFERED=1
 # Expose port (Railway will set PORT environment variable)
 EXPOSE 8000
 
-# Run the application using startup script
-CMD ["./start.sh"]
+# Run the application using Python startup script
+CMD ["python", "start.py"]
