@@ -20,6 +20,15 @@ def main():
     print(f"🔧 Port: {port}")
     print(f"🐍 Python: {sys.version}")
     
+    # Ensure port is an integer
+    try:
+        port = int(port)
+    except ValueError:
+        print(f"⚠️  Invalid port '{port}', using default 8000")
+        port = 8000
+    
+    print(f"✅ Using port: {port}")
+    
     # Start uvicorn
     print("▶️  Starting application...")
     cmd = [
@@ -31,7 +40,6 @@ def main():
     ]
     
     print(f"🚀 Running: {' '.join(cmd)}")
-    subprocess.exec_cmd = cmd
     os.execvp("uvicorn", cmd)
 
 if __name__ == "__main__":
