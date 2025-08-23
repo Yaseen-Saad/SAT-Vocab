@@ -11,10 +11,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
 COPY src/ ./src/
-COPY data/ ./data/
 
-# Create directories for feedback storage
-RUN mkdir -p feedback_data
+# Create directories for data and feedback storage
+RUN mkdir -p data/processed feedback_data
 
 # Set environment variables
 ENV PYTHONPATH=/app/src
