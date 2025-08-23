@@ -15,12 +15,16 @@ COPY src/ ./src/
 # Create directories for data and feedback storage
 RUN mkdir -p data/processed feedback_data
 
+# Copy startup script
+COPY start.sh ./
+RUN chmod +x start.sh
+
 # Set environment variables
 ENV PYTHONPATH=/app/src
-ENV PORT=8000
+ENV PYTHONUNBUFFERED=1
 
-# Expose port
-EXPOSE $PORT
+# Expose port (Railway will set PORT environment variable)
+EXPOSE 8000
 
-# Run the application
-CMD uvicorn src.app:app --host 0.0.0.0 --port $PORT
+# Run the application using startup script
+CMD ["./start.sh"]

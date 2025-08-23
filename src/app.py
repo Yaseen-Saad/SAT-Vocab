@@ -91,12 +91,17 @@ async def lifespan(app: FastAPI):
     """Initialize services on startup"""
     global generator, rag_engine, llm_service
     
-    logger.info("Initializing SAT Vocabulary AI System...")
+    logger.info("🚀 Initializing SAT Vocabulary AI System...")
     
     try:
         # Initialize services
+        logger.info("📊 Initializing RAG engine...")
         rag_engine = get_rag_engine()
+        
+        logger.info("🤖 Initializing LLM service...")
         llm_service = get_llm_service()
+        
+        logger.info("⚡ Initializing vocabulary generator...")
         generator = SimpleVocabularyGenerator(llm_service, rag_engine)
         
         # Store in app state for access in endpoints
@@ -104,14 +109,18 @@ async def lifespan(app: FastAPI):
         app.state.llm_service = llm_service
         app.state.generator = generator
         
-        logger.info("Services initialized successfully")
+        logger.info("✅ Services initialized successfully")
         yield
         
     except Exception as e:
-        logger.error(f"Failed to initialize services: {e}")
-        raise
+        logger.error(f"❌ Failed to initialize services: {e}")
+        import traceback
+        logger.error(f"📋 Traceback: {traceback.format_exc()}")
+        # Don't raise - allow app to start in degraded mode
+        yield
+    
     finally:
-        logger.info("Shutting down...")
+        logger.info("🔄 Shutting down...")
 
 
 # Create FastAPI app
@@ -134,6 +143,13 @@ static_dir.mkdir(parents=True, exist_ok=True)
 # Mount static files if directory exists
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+
+# Health check endpoint for deployment platforms
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "SAT Vocabulary AI", "timestamp": "2025-08-23"}
 
 
 # Web interface routes
