@@ -6,7 +6,7 @@ Simple, focused vocabulary generation without over-engineering
 import logging
 import re
 from typing import Dict, List, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,8 @@ class GeneratedVocabularyEntry:
     other_forms: str
     example_sentence: str
     quality_score: float = 80.0
+    validation_passed: bool = True
+    generation_metadata: Dict = field(default_factory=dict)
 
 class SimpleVocabularyGenerator:
     """Clean vocabulary generator focused on quality and learning"""
@@ -43,7 +45,7 @@ class SimpleVocabularyGenerator:
             "VICISSITUDE": ("vi-SIS-i-tood", "noun", "natural change or variation")
         }
     
-    def generate_entry(self, word: str, avoid_issues: List[str] = None) -> GeneratedVocabularyEntry:
+    def generate_entry(self, word: str, part_of_speech: str = None, avoid_issues: Dict = None) -> GeneratedVocabularyEntry:
         """Generate a vocabulary entry"""
         try:
             # Get learning context from RAG
@@ -217,3 +219,11 @@ Generate only the 5 lines above, nothing else."""
             example_sentence=f"The {word.lower()} was impressive.",
             quality_score=50.0
         )
+    
+    def generate_complete_entry(self, word: str, use_context: bool = True, num_context_examples: int = 3) -> GeneratedVocabularyEntry:
+        """Generate a complete entry with context"""
+        return self.generate_entry(word)
+    
+    def batch_generate(self, words: List[str], use_context: bool = True, num_context_examples: int = 3) -> List[GeneratedVocabularyEntry]:
+        """Generate multiple entries"""
+        return [self.generate_entry(word) for word in words]

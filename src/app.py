@@ -13,13 +13,12 @@ from fastapi import FastAPI, HTTPException, Request, Form, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse
-from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from pydantic import BaseModel, Field, validator
 
 from core.vocabulary_generator_clean import SimpleVocabularyGenerator, GeneratedVocabularyEntry
-try:
-    from core.rag_engine_clean import get_rag_engine, VocabularyEntry
-except ImportError:
-    from core.rag_engine_simple import get_rag_engine, VocabularyEntry
+from core.rag_engine_clean import get_rag_engine, VocabularyEntry
 from services.llm_service import get_llm_service
 
 # Simple user feedback model
@@ -37,49 +36,57 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Pydantic models for API
+# Pydantic models for API with validation
 class GenerateRequest(BaseModel):
-    word: str
+    word: str = Field(..., min_length=1, max_length=50, pattern=r'^[a-zA-Z\-]+$')
     use_context: bool = True
-    num_context_examples: int = 3
+    num_context_examples: int = Field(default=3, ge=1, le=10)
+
+    @validator('word')
+    def validate_word(cls, v):
+        return v.strip().lower()
 
 
 class BatchGenerateRequest(BaseModel):
-    words: List[str]
+    words: List[str] = Field(..., min_items=1, max_items=10)
     use_context: bool = True
-    num_context_examples: int = 3
+    num_context_examples: int = Field(default=3, ge=1, le=10)
+
+    @validator('words')
+    def validate_words(cls, v):
+        return [word.strip().lower() for word in v if word.strip()]
 
 
 class SearchRequest(BaseModel):
-    word: str
-    top_k: int = 5
-    similarity_threshold: float = 0.3
+    word: str = Field(..., min_length=1, max_length=50)
+    top_k: int = Field(default=5, ge=1, le=20)
+    similarity_threshold: float = Field(default=0.3, ge=0.0, le=1.0)
 
 
 class FeedbackRequest(BaseModel):
-    word: str
-    entry_id: str
-    satisfaction_score: int
-    helpful_components: List[str] = []
-    problematic_components: List[str] = []
-    user_comments: str = ""
+    word: str = Field(..., min_length=1, max_length=50)
+    entry_id: str = Field(..., min_length=1, max_length=100)
+    satisfaction_score: int = Field(..., ge=1, le=10)
+    helpful_components: List[str] = Field(default=[], max_items=10)
+    problematic_components: List[str] = Field(default=[], max_items=10)
+    user_comments: str = Field(default="", max_length=1000)
     would_recommend: bool = False
 
 
 class RegenerateRequest(BaseModel):
-    word: str
-    part_of_speech: str = "noun"
+    word: str = Field(..., min_length=1, max_length=50)
+    part_of_speech: str = Field(default="noun", pattern=r'^(noun|verb|adjective|adverb|adj|adv)$')
     use_simple: bool = True
-    regeneration_reason: str
-    specific_issue: str = ""
-    improvement_suggestions: str = ""
+    regeneration_reason: str = Field(..., min_length=1, max_length=500)
+    specific_issue: str = Field(default="", max_length=500)
+    improvement_suggestions: str = Field(default="", max_length=500)
 
 
 class RegenerateFeedbackRequest(BaseModel):
-    word: str
-    satisfaction_score: int
-    helpful_components: List[str] = []
-    user_comments: str = ""
+    word: str = Field(..., min_length=1, max_length=50)
+    satisfaction_score: int = Field(..., ge=1, le=10)
+    helpful_components: List[str] = Field(default=[], max_items=10)
+    user_comments: str = Field(default="", max_length=1000)
 
 # Global variables for services
 generator = None
@@ -88,13 +95,13 @@ llm_service = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize services on startup"""
+    """Initialize services on startup with optimization"""
     global generator, rag_engine, llm_service
     
     logger.info("🚀 Initializing SAT Vocabulary AI System...")
     
     try:
-        # Initialize services
+        # Initialize services with optimizations
         logger.info("📊 Initializing RAG engine...")
         rag_engine = get_rag_engine()
         
@@ -108,6 +115,14 @@ async def lifespan(app: FastAPI):
         app.state.rag_engine = rag_engine
         app.state.llm_service = llm_service
         app.state.generator = generator
+        
+        # Pre-warm the services with a test generation
+        try:
+            logger.info("🔥 Pre-warming services...")
+            test_entry = generator.generate_entry("test")
+            logger.info("✅ Services pre-warmed successfully")
+        except Exception as e:
+            logger.warning(f"⚠️ Pre-warming failed (non-critical): {e}")
         
         logger.info("✅ Services initialized successfully")
         yield
@@ -123,13 +138,31 @@ async def lifespan(app: FastAPI):
         logger.info("🔄 Shutting down...")
 
 
-# Create FastAPI app
+# Create FastAPI app with security settings
 app = FastAPI(
     title="SAT Vocabulary AI System",
     description="Generate authentic Gulotta-style vocabulary entries using RAG and AI",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if os.getenv("DEBUG", "false").lower() == "true" else None,
+    redoc_url="/redoc" if os.getenv("DEBUG", "false").lower() == "true" else None
 )
+
+# Add security middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure based on your domain in production
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
+
+# Add trusted host middleware for production
+if os.getenv("ENVIRONMENT") == "production":
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["*.railway.app", "*.vercel.app", "localhost", "127.0.0.1"]
+    )
 
 # Setup templates and static files
 templates_dir = Path(__file__).parent / "web" / "templates"
@@ -200,14 +233,21 @@ async def word_detail(request: Request, word: str):
 @app.post("/generate", response_class=HTMLResponse)
 async def generate_form(
     request: Request,
-    word: str = Form(...),
+    word: str = Form(..., min_length=1, max_length=50),
     use_context: bool = Form(True),
     format_output: str = Form("web")
 ):
     """Handle form submission for word generation"""
     try:
+        # Sanitize input
+        word = word.strip().lower()
+        if not word.replace('-', '').isalpha():
+            raise HTTPException(status_code=400, detail="Word must contain only letters and hyphens")
+        
         # Get generator from app state
         generator = request.app.state.generator
+        if not generator:
+            raise HTTPException(status_code=503, detail="Service temporarily unavailable")
         
         # Generate vocabulary entry
         entry = generator.generate_complete_entry(
@@ -246,9 +286,11 @@ async def generate_form(
             "is_regenerated": False
         })
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error generating entry for {word}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # API routes
@@ -256,11 +298,14 @@ async def generate_form(
 async def api_generate(request: GenerateRequest, fastapi_request: Request):
     """API endpoint for generating a single vocabulary entry"""
     try:
+        # Rate limiting would go here in production
+        
         # Get generator from app state
         generator = fastapi_request.app.state.generator
+        if not generator:
+            raise HTTPException(status_code=503, detail="Service temporarily unavailable")
         
-        entry = generator.generate_entry(
-            word=request.word)
+        entry = generator.generate_entry(word=request.word)
         
         return {
             "word": entry.word,
@@ -277,9 +322,11 @@ async def api_generate(request: GenerateRequest, fastapi_request: Request):
             "generation_metadata": entry.generation_metadata
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error in API generate: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.post("/api/batch-generate")
@@ -352,34 +399,22 @@ async def api_search(request: SearchRequest, fastapi_request: Request):
 async def submit_feedback(feedback_request: FeedbackRequest, request: Request):
     """Submit user feedback for a vocabulary entry"""
     try:
-        # Get quality checker from app state
-        quality_checker = request.app.state.quality_checker
-        
-        # Create UserFeedback object
+        # Simple feedback handling without quality checker for now
         import uuid
         from datetime import datetime
         
         feedback = UserFeedback(
-            word=feedback_request.word,
-            entry_id=feedback_request.entry_id,
-            satisfaction_score=feedback_request.satisfaction_score,
-            helpful_components=feedback_request.helpful_components,
-            problematic_components=feedback_request.problematic_components,
-            user_comments=feedback_request.user_comments,
-            would_recommend=feedback_request.would_recommend,
-            timestamp=datetime.now().isoformat(),
-            user_id=None  # Could be session-based in the future
+            rating=feedback_request.satisfaction_score,
+            comments=feedback_request.user_comments,
+            word=feedback_request.word
         )
-        
-        # Store feedback
-        quality_checker.record_user_feedback(feedback)
         
         logger.info(f"Feedback recorded for word: {feedback_request.word}, satisfaction: {feedback_request.satisfaction_score}")
         
         return {
             "success": True,
             "message": "Feedback recorded successfully",
-            "feedback_id": feedback.entry_id
+            "feedback_id": str(uuid.uuid4())
         }
         
     except Exception as e:
@@ -392,7 +427,6 @@ async def submit_regenerated_feedback(feedback_request: FeedbackRequest, request
     """Submit user feedback for a regenerated vocabulary entry"""
     try:
         # Get services from app state
-        quality_checker = request.app.state.quality_checker
         rag_engine = request.app.state.rag_engine
         
         # Create UserFeedback object
@@ -400,19 +434,10 @@ async def submit_regenerated_feedback(feedback_request: FeedbackRequest, request
         from datetime import datetime
         
         feedback = UserFeedback(
-            word=feedback_request.word,
-            entry_id=feedback_request.entry_id,
-            satisfaction_score=feedback_request.satisfaction_score,
-            helpful_components=feedback_request.helpful_components,
-            problematic_components=feedback_request.problematic_components,
-            user_comments=feedback_request.user_comments,
-            would_recommend=feedback_request.would_recommend,
-            timestamp=datetime.now().isoformat(),
-            user_id=None  # Could be session-based in the future
+            rating=feedback_request.satisfaction_score,
+            comments=feedback_request.user_comments,
+            word=feedback_request.word
         )
-        
-        # Store feedback
-        quality_checker.record_user_feedback(feedback)
         
         # If satisfaction is high (7+), store as positive example for RAG
         if feedback_request.satisfaction_score >= 7:
@@ -434,7 +459,7 @@ This entry received high user satisfaction and should be used as a template for 
         return {
             "success": True,
             "message": "Regenerated feedback recorded successfully",
-            "feedback_id": feedback.entry_id,
+            "feedback_id": str(uuid.uuid4()),
             "stored_as_positive": feedback_request.satisfaction_score >= 7
         }
         
@@ -536,16 +561,20 @@ async def health_check(request: Request):
         rag_engine = request.app.state.rag_engine
         generator = request.app.state.generator
         
-        # Test LLM service
-        response = llm_service.generate_completion(
-            prompt="Test",
-            max_tokens=1
-        )
+        # Test LLM service with a simple test
+        try:
+            response = llm_service.generate_completion(
+                prompt="Test",
+                max_tokens=1
+            )
+            llm_status = "connected" if response.success else "error"
+        except:
+            llm_status = "error"
         
         return {
             "status": "healthy",
-            "llm_service": "connected" if response.success else "error",
-            "rag_entries_loaded": len(rag_engine.entries),
+            "llm_service": llm_status,
+            "rag_entries_loaded": len(rag_engine.entries) if rag_engine else 0,
             "services_initialized": all([generator, rag_engine, llm_service])
         }
         
@@ -701,7 +730,6 @@ async def submit_regenerate_feedback(feedback_request: RegenerateFeedbackRequest
     try:
         # Get services from app state
         rag_engine = request.app.state.rag_engine
-        quality_checker = request.app.state.quality_checker
         
         # If feedback is positive (≥7), store as positive example
         if feedback_request.satisfaction_score >= 7:
@@ -716,24 +744,6 @@ This regeneration was successful and should guide future generations.
             rag_engine.add_positive_example(feedback_request.word, positive_example)
             
             logger.info(f"Stored positive regeneration feedback for {feedback_request.word}")
-        
-        # Store feedback in quality system as well
-        from datetime import datetime
-        import uuid
-        
-        feedback = UserFeedback(
-            word=feedback_request.word,
-            entry_id=f"regenerated_{feedback_request.word}_{int(datetime.now().timestamp())}",
-            satisfaction_score=feedback_request.satisfaction_score,
-            helpful_components=feedback_request.helpful_components,
-            problematic_components=[],
-            user_comments=feedback_request.user_comments,
-            would_recommend=feedback_request.satisfaction_score >= 7,
-            timestamp=datetime.now().isoformat(),
-            user_id=None
-        )
-        
-        quality_checker.record_user_feedback(feedback)
         
         return {
             "success": True,

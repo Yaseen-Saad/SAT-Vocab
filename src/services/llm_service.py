@@ -1,6 +1,7 @@
 """
 LLM Service for integrating with ai.hackclub.com API
 Provides clean integration with proper error handling, retries, and response processing.
+Optimized for serverless deployment with caching and connection pooling.
 """
 
 import os
@@ -11,6 +12,7 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,7 @@ class LLMResponse:
 class HackClubLLMService:
     """
     AI Hackclub API client with robust error handling and retry logic
+    Optimized for serverless environments with connection pooling
     """
     
     def __init__(self, api_key: str = None, base_url: str = None, default_model: str = None):
@@ -37,28 +40,37 @@ class HackClubLLMService:
         self.base_url = base_url or os.getenv('HACKCLUB_API_URL', 'https://ai.hackclub.com')
         self.default_model = default_model or os.getenv('HACKCLUB_MODEL', 'qwen/qwen3-32b')
         
-        # Setup session with retry strategy
+        # Setup session with retry strategy and connection pooling
         self.session = requests.Session()
         retry_strategy = Retry(
-            total=3,
-            backoff_factor=1,
+            total=2,  # Reduced for faster failover
+            backoff_factor=0.5,  # Faster backoff
             status_forcelist=[429, 500, 502, 503, 504],
             allowed_methods=["POST"]
         )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
+        adapter = HTTPAdapter(
+            max_retries=retry_strategy,
+            pool_connections=10,  # Connection pooling
+            pool_maxsize=20
+        )
         self.session.mount("http://", adapter)
-        self.session.mount("https://", adapter)
         self.session.mount("https://", adapter)
         
         # Default headers (no auth needed for Hack Club AI)
         headers = {
             'Content-Type': 'application/json',
-            'User-Agent': 'SAT-Vocab-RAG/1.0.0'
+            'User-Agent': 'SAT-Vocab-RAG/1.0.0',
+            'Accept': 'application/json',
+            'Connection': 'keep-alive'
         }
         if self.api_key:  # Only add auth if API key is provided
             headers['Authorization'] = f'Bearer {self.api_key}'
         
         self.session.headers.update(headers)
+        
+        # Simple in-memory cache for repeated requests
+        self._cache = {}
+        self._cache_size = 100
     
     def generate_completion(
         self,
@@ -70,7 +82,7 @@ class HackClubLLMService:
         **kwargs
     ) -> LLMResponse:
         """
-        Generate a completion using the Hackclub API
+        Generate a completion using the Hackclub API with caching
         
         Args:
             prompt: The user prompt
@@ -84,6 +96,14 @@ class HackClubLLMService:
             LLMResponse with the generated content
         """
         try:
+            # Create cache key
+            cache_key = f"{prompt[:100]}_{model or self.default_model}_{temperature}_{max_tokens}"
+            
+            # Check cache first
+            if cache_key in self._cache:
+                logger.debug("Cache hit for request")
+                return self._cache[cache_key]
+            
             # Prepare messages
             messages = []
             if system_message:
@@ -102,11 +122,11 @@ class HackClubLLMService:
             logger.info(f"Making API request to {self.base_url}/chat/completions")
             logger.debug(f"Payload: {payload}")
             
-            # Make API request
+            # Make API request with reduced timeout for serverless
             response = self.session.post(
                 f"{self.base_url}/chat/completions",
                 json=payload,
-                timeout=30
+                timeout=25  # Reduced for serverless constraints
             )
             
             # Check for HTTP errors
@@ -123,13 +143,19 @@ class HackClubLLMService:
             content = choice['message']['content']
             
             # Create structured response
-            return LLMResponse(
+            result = LLMResponse(
                 content=content,
                 usage=data.get('usage', {}),
                 model=data.get('model', model or self.default_model),
                 finish_reason=choice.get('finish_reason', 'unknown'),
                 success=True
             )
+            
+            # Cache the result (with size limit)
+            if len(self._cache) < self._cache_size:
+                self._cache[cache_key] = result
+            
+            return result
             
         except requests.exceptions.RequestException as e:
             logger.error(f"API request failed: {e}")
