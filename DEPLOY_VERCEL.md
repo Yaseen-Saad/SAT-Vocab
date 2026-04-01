@@ -50,6 +50,7 @@ Set this in Vercel Project Settings > Environment Variables:
 Notes:
 - The app now uses the authenticated Hack Club proxy endpoint.
 - `HACKCLUB_API_URL` defaults to `https://ai.hackclub.com/proxy/v1`.
+- `HACKCLUB_MODEL` should be `google/gemini-2.5-flash`.
 - Do not commit secrets to git. Keep keys only in Vercel environment variables.
 
 ## 🎯 What Happens During Deployment

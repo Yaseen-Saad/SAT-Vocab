@@ -415,6 +415,17 @@
             </span>
         </div>
 
+        {% if entry.llm_error %}
+        <div class="entry-section" style="border-left-color:#d63031; background:#fff5f5;">
+            <div class="section-title" style="color:#b71c1c;">LLM Generation Error</div>
+            <div class="section-content" style="color:#7f1d1d;">
+                {{ entry.llm_error }}
+                <br><br>
+                Check <strong>HACKCLUB_API_KEY</strong> and provider availability, then regenerate this entry.
+            </div>
+        </div>
+        {% endif %}
+
         <button class="toggle-raw" onclick="toggleRawOutput()">Show Raw Generated Text</button>
         <div id="raw-output" class="raw-output hidden">{{ entry.generated_text }}</div>
     </div>

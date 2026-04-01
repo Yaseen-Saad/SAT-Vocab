@@ -24,6 +24,8 @@ class GeneratedVocabularyEntry:
     example_sentence: str
     quality_score: float = 80.0
     validation_passed: bool = True
+    generated_text: str = ""
+    llm_error: str = ""
     generation_metadata: Dict = field(default_factory=dict)
 
 class SimpleVocabularyGenerator:
@@ -35,6 +37,7 @@ class SimpleVocabularyGenerator:
         
         # Simple word database for better definitions
         self.word_data = {
+            "ANALOGOUS": ("uh-NAH-luh-guss", "adjective", "similar"),
             "REVERE": ("rev-EER", "verb", "to respect and admire deeply"),
             "SERENE": ("suh-REEN", "adjective", "calm and peaceful"),
             "ARDENT": ("AHR-dent", "adjective", "passionate and enthusiastic"),
@@ -55,20 +58,55 @@ class SimpleVocabularyGenerator:
             prompt = self._build_prompt(word, context, avoid_issues)
             
             # Generate response
-            response = self.llm_service.generate_completion(prompt)
+            response = self.llm_service.generate_completion(
+                prompt,
+                max_tokens=350,
+                temperature=0.2,
+                system_message="You write concise SAT vocabulary entries with a clear mnemonic, picture story, related forms, and example sentence. Output only the requested five lines with no commentary."
+            )
+
+            if hasattr(response, 'success') and not response.success:
+                logger.error(f"LLM request failed for {word}: {getattr(response, 'error', 'unknown error')}")
+                return self._create_error_entry(word, getattr(response, 'error', 'LLM request failed'))
+
             content = self._extract_content(response)
+
+            if not content or not content.strip():
+                return self._create_error_entry(word, "LLM returned empty content")
             
             # Parse and validate
             entry = self._parse_entry(content, word)
+            entry.generated_text = content
+            entry.generation_metadata = {
+                "llm_success": True,
+                "model": getattr(response, 'model', ''),
+                "finish_reason": getattr(response, 'finish_reason', '')
+            }
+
             if self._validate_entry(entry):
                 return entry
-            
-            # Fallback
-            return self._create_basic_entry(word)
+
+            # If parse/validation fails, try one strict repair pass.
+            repair_prompt = self._build_repair_prompt(word, content)
+            repair_response = self.llm_service.generate_completion(repair_prompt, temperature=0.2, max_tokens=300)
+            if hasattr(repair_response, 'success') and repair_response.success:
+                repaired_content = self._extract_content(repair_response)
+                repaired_entry = self._parse_entry(repaired_content, word)
+                repaired_entry.generated_text = repaired_content
+                repaired_entry.generation_metadata = {
+                    "llm_success": True,
+                    "model": getattr(repair_response, 'model', ''),
+                    "finish_reason": getattr(repair_response, 'finish_reason', ''),
+                    "repair_pass": True
+                }
+                if self._validate_entry(repaired_entry):
+                    return repaired_entry
+
+            return self._create_error_entry(word, "LLM output format/quality validation failed")
             
         except Exception as e:
             logger.error(f"Generation failed for {word}: {e}")
-            return self._create_basic_entry(word)
+            return self._create_error_entry(word, str(e))
     
     def _get_context(self, word: str) -> Dict[str, Any]:
         """Get learning context from RAG"""
@@ -112,7 +150,14 @@ class SimpleVocabularyGenerator:
         if avoid_issues:
             warnings += f"\nFIX THESE ISSUES:\n" + "\n".join(f"- {issue}" for issue in avoid_issues)
         
-        return f"""Create a vocabulary entry in this EXACT format:
+        return f"""Create a vocabulary entry in this EXACT format and style:
+
+    REFERENCE FORMAT:
+    WORD (pronunciation) part of speech — short definition
+    Sounds like: mnemonic phrase
+    Picture: vivid 2-3 sentence story
+    Other forms: related form(s)
+    Sentence: natural example sentence
 
 {word.upper()} ({pronunciation}) {pos} — {definition}
 Sounds like: [something that sounds like the word]
@@ -130,15 +175,32 @@ RULES:
 
 {warnings}
 
-Generate only the 5 lines above, nothing else."""
+Generate only the 5 lines above, nothing else. Keep it tight, vivid, and easy to remember."""
     
     def _get_word_info(self, word: str) -> tuple:
         """Get pronunciation, part of speech, and definition"""
         if word.upper() in self.word_data:
             return self.word_data[word.upper()]
         
-        # Default values
-        return f"{word.lower()}", "noun", f"related to {word.lower()}"
+        # Default values for unknown words; real definition should come from LLM.
+        return f"{word.lower()}", "adjective", "definition to be generated by LLM"
+
+    def _build_repair_prompt(self, word: str, raw_output: str) -> str:
+        """Build a strict reformat prompt for malformed LLM output."""
+        pronunciation, pos, definition = self._get_word_info(word)
+        return f"""Reformat the text below into EXACTLY this 5-line format and improve quality if needed:
+
+{word.upper()} ({pronunciation}) {pos} — {definition}
+Sounds like: [mnemonic phrase]
+Picture: [2-3 sentence vivid picture story]
+Other forms: [word forms]
+Sentence: [natural sentence that uses {word.lower()}]
+
+Do not include extra lines or commentary.
+
+TEXT TO REFORMAT:
+{raw_output}
+"""
     
     def _extract_content(self, response) -> str:
         """Extract content from LLM response"""
@@ -150,6 +212,15 @@ Generate only the 5 lines above, nothing else."""
     
     def _parse_entry(self, content: str, word: str) -> GeneratedVocabularyEntry:
         """Parse response into structured entry"""
+        import re
+
+        # Remove common markdown / wrapper formatting that models often add.
+        content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL | re.IGNORECASE)
+        content = re.sub(r'<.*?>', '', content)
+        content = re.sub(r'\*\*(.*?)\*\*', r'\1', content)
+        content = re.sub(r'__(.*?)__', r'\1', content)
+        content = re.sub(r'^\s*[-*•]\s*', '', content, flags=re.MULTILINE)
+
         lines = [line.strip() for line in content.split('\n') if line.strip()]
         
         # Initialize with defaults
@@ -168,9 +239,9 @@ Generate only the 5 lines above, nothing else."""
         for line in lines:
             if '(' in line and ')' in line and '—' in line:
                 # Main line: WORD (pronunciation) pos — definition
-                match = re.match(r'([A-Z]+)\s*\(([^)]+)\)\s*(\w+)\s*[—–-]\s*(.+)', line)
-                if match:
-                    entry.word = match.group(1)
+                match = re.match(r'([A-Za-z][A-Za-z\- ]*)\s*\(([^)]+)\)\s*([A-Za-z.\-]+)\s*[—–-]\s*(.+)', line)
+                if match and match.group(1).strip().lower() == word.strip().lower():
+                    entry.word = match.group(1).strip().upper()
                     entry.pronunciation = match.group(2)
                     entry.part_of_speech = match.group(3)
                     entry.definition = match.group(4)
@@ -192,8 +263,18 @@ Generate only the 5 lines above, nothing else."""
         required = [entry.definition, entry.mnemonic_phrase, entry.picture_story, entry.example_sentence]
         if not all(required):
             return False
+
+        # Require a meaningful entry, not a placeholder-style fragment.
+        if len(entry.definition.split()) < 2:
+            return False
+        if len(entry.mnemonic_phrase.split()) < 2:
+            return False
+        if len(entry.picture_story.split()) < 3:
+            return False
+        if len(entry.example_sentence.split()) < 4:
+            return False
         
-        # Check for word usage in example
+        # Example sentence should use the target word naturally.
         if entry.word.lower() not in entry.example_sentence.lower():
             return False
         
@@ -218,6 +299,29 @@ Generate only the 5 lines above, nothing else."""
             other_forms="",
             example_sentence=f"The {word.lower()} was impressive.",
             quality_score=50.0
+        )
+
+    def _create_error_entry(self, word: str, error_message: str) -> GeneratedVocabularyEntry:
+        """Create an explicit error entry instead of low-quality fake content."""
+        pronunciation, pos, _ = self._get_word_info(word)
+        return GeneratedVocabularyEntry(
+            word=word.upper(),
+            pronunciation=pronunciation,
+            part_of_speech=pos,
+            definition="LLM generation failed. Check API key and provider status.",
+            mnemonic_type="Sounds like",
+            mnemonic_phrase="Unavailable due to LLM error",
+            picture_story="No picture story generated because the language model request failed.",
+            other_forms="",
+            example_sentence=f"A valid example for '{word.lower()}' could not be generated.",
+            quality_score=0.0,
+            validation_passed=False,
+            generated_text="",
+            llm_error=error_message,
+            generation_metadata={
+                "llm_success": False,
+                "error": error_message
+            }
         )
     
     def generate_complete_entry(self, word: str, use_context: bool = True, num_context_examples: int = 3) -> GeneratedVocabularyEntry:

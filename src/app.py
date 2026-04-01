@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
 
 from fastapi import FastAPI, HTTPException, Request, Form, Depends
 from fastapi.staticfiles import StaticFiles
@@ -20,6 +21,9 @@ from pydantic import BaseModel, Field, validator
 from core.vocabulary_generator_clean import SimpleVocabularyGenerator, GeneratedVocabularyEntry
 from core.rag_engine_clean import get_rag_engine, VocabularyEntry
 from services.llm_service import get_llm_service
+
+# Load .env for local development and CLI runs.
+load_dotenv()
 
 # Simple user feedback model
 class UserFeedback:
