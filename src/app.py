@@ -188,7 +188,12 @@ if static_dir.exists():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "service": "SAT Vocabulary AI", "timestamp": "2025-08-23"}
+    from datetime import datetime
+    return {
+        "status": "healthy",
+        "service": "SAT Vocabulary AI",
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
 
 
 # Web interface routes

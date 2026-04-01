@@ -1,254 +1,69 @@
-# 🎓 SAT Vocabulary AI System - Perfect & Production Ready
+﻿# SAT Vocab RAG
 
-[![Deployment Status](https://img.shields.io/badge/deployment-ready-brightgreen)](PERFECT_DEPLOYMENT_GUIDE.md)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
+FastAPI app that generates SAT vocabulary entries with mnemonics, context, and feedback-aware retrieval.
 
-> **An AI-powered vocabulary learning system that generates authentic Charles Gulotta-style vocabulary entries with mnemonics, picture stories, and contextual examples. Features RAG (Retrieval-Augmented Generation) for continuous learning from user feedback.**
+## Features
+- FastAPI web UI and JSON API
+- RAG-style context from stored entries
+- Feedback capture (positive/negative examples)
+- Hack Club AI integration via authenticated proxy API
+- Vercel serverless entrypoint and local run support
 
-## 🌟 Features
+## Tech Stack
+- Python 3.11+
+- FastAPI + Jinja2
+- Requests
+- Vercel Python runtime
 
-- **🎨 Authentic Gulotta Style**: Generates vocabulary entries matching Charles Gulotta's distinctive approach with creative sound-alike mnemonics and vivid picture stories
-- **🧠 Smart RAG Integration**: Analyzes authentic examples to retrieve relevant vocabulary patterns for each new word
-- **⚡ One-Click Generation**: Create complete vocabulary entries with a single command
-- **📊 Quality Assurance**: Validates entries to ensure they match authentic Gulotta style and educational standards
-- **🌐 Web Interface**: Interactive web application for easy vocabulary generation
-- **🔧 CLI Tools**: Command-line interface for batch processing and automation
-- **📋 Batch Processing**: Generate multiple entries efficiently
-- **🔍 Interactive Testing**: Test individual words on demand with similarity search
+## Project Structure
+- src/app.py: main FastAPI application
+- src/core/rag_engine_clean.py: retrieval and feedback context
+- src/core/vocabulary_generator_clean.py: generation orchestration
+- src/services/llm_service.py: Hack Club AI client
+- api/index.py: Vercel entrypoint
+- tests/test_smoke.py: basic local smoke tests
 
-## 🚀 Quick Start
+## Local Setup
+1. Create a virtual environment and activate it.
+2. Install dependencies:
+   pip install -r requirements.txt
+3. Copy env template and set your key:
+   copy .env.example .env
+4. Set HACKCLUB_API_KEY in .env.
+5. Run locally:
+   python main.py
+6. Open:
+   http://localhost:8000
 
-### 1. Setup
-```bash
-# Run the automated setup
-python scripts/setup.py
+## Local Testing
+Install dev dependencies:
+- pip install -r requirements-dev.txt
 
-# Or manual setup:
-pip install -r requirements.txt
-export HACKCLUB_API_KEY=your_api_key_here  # Get from https://ai.hackclub.com
-```
+Run tests:
+- pytest -q
 
-### 2. Test the System
-```bash
-# Quick system test
-python scripts/test_system.py
+## Required Environment Variables
+- HACKCLUB_API_KEY: your key from https://ai.hackclub.com/dashboard
 
-# Test with CLI
-python src/cli.py test
-```
+Optional:
+- HACKCLUB_API_URL (default: https://ai.hackclub.com/proxy/v1)
+- HACKCLUB_MODEL (default: qwen/qwen3-32b)
+- DEBUG (default: false)
+- ENVIRONMENT (development or production)
 
-### 3. Generate Vocabulary Entries
+## Deploy to Vercel (GitHub Import)
+1. Import this repo in Vercel.
+2. Keep Framework Preset as Other.
+3. Root Directory: ./
+4. Leave build/output commands empty (vercel.json is used).
+5. Add env var:
+   - HACKCLUB_API_KEY
+6. Deploy.
 
-**Web Interface:**
-```bash
-python src/app.py
-# Open http://localhost:8000
-```
+## Health Endpoints
+- /health
+- /api/health
 
-**Command Line:**
-```bash
-# Single word
-python src/cli.py generate "perspicacious"
-
-# Multiple words
-python src/cli.py batch -w "ineffable" "sanguine" "ubiquitous"
-
-# From file
-python src/cli.py batch -f words.txt
-```
-
-**Python API:**
-```python
-from core.vocabulary_generator import generate_vocabulary_entry
-
-entry = generate_vocabulary_entry("magnanimous")
-print(f"Word: {entry.word}")
-print(f"Mnemonic: {entry.mnemonic_phrase}")
-print(f"Picture: {entry.picture_story}")
-```
-
-## 📁 Project Structure
-
-```
-sat-vocab-rag/
-├── src/
-│   ├── app.py                    # FastAPI web application
-│   ├── cli.py                    # Command-line interface
-│   ├── core/
-│   │   ├── rag_engine.py         # RAG implementation & sample parsing
-│   │   └── vocabulary_generator.py # Main generation pipeline
-│   ├── services/
-│   │   └── llm_service.py        # AI Hackclub API integration
-│   └── web/templates/            # Web interface templates
-├── config                        # Configuration file
-├── sample.txt                    # Authentic Gulotta vocabulary examples
-├── scripts/
-│   ├── setup.py                  # Automated setup script
-│   └── test_system.py            # System testing
-├── requirements.txt              # Python dependencies
-└── .env                          # Environment variables
-```
-
-## 🔧 Core Components
-
-### 1. AI Integration System
-- **Clean API Integration**: Robust connection to ai.hackclub.com with retry logic
-- **Model Selection**: Configured for qwen/qwen3-32b with fallback options
-- **Error Handling**: Comprehensive error handling and response processing
-
-### 2. RAG Implementation  
-- **Sample Processing**: Parses authentic Gulotta entries from sample.txt
-- **Pattern Matching**: Retrieves relevant vocabulary patterns using semantic similarity
-- **Context Assembly**: Formats authentic examples into effective prompts
-
-### 3. Vocabulary Generation Pipeline
-- **Authentic Style Generation**: Creates entries matching Gulotta's approach
-- **Quality Validation**: Ensures entries meet educational standards
-- **Format Standardization**: Consistent pronunciation, forms, and layout
-
-### 4. Quality Assurance
-- **Style Validation**: Checks for authentic Gulotta patterns
-- **Content Filtering**: Removes AI artifacts and generic content
-- **Educational Standards**: Ensures SAT-appropriate definitions and examples
-
-## 💡 Example Output
-
-```
-PERSPICACIOUS (per-spih-KAY-shuss) adj — having keen insight; perceptive
-
-Sounds like: perspire cautious
-Picture: A detective who sweats (perspires) because he's very cautious about 
-every clue he examines. His careful, insightful nature makes him perspire as 
-he thinks deeply about each piece of evidence, but his perspicacious mind 
-always solves the case.
-
-Other forms: Perspicacity (noun); perspicaciously (adv)
-Sentence: Her perspicacious analysis of the market trends saved the company 
-millions of dollars.
-```
-
-## 🛠️ Configuration
-
-The system uses YAML configuration in the `config` file:
-
-```yaml
-# AI Hackclub API settings
-hackclub_api:
-  url: https://ai.hackclub.com/v1
-  model: qwen/qwen3-32b
-  max_tokens: 1000
-  temperature: 0.7
-
-# RAG settings  
-rag:
-  top_k: 5
-  similarity_threshold: 0.7
-  max_context_length: 2000
-
-# Quality control
-quality_control:
-  required_components:
-    - pronunciation
-    - definition  
-    - mnemonic
-    - picture
-    - example_sentence
-```
-
-## 🌐 Web Interface
-
-The web application provides:
-- **Interactive Generation**: Simple form-based vocabulary creation
-- **Real-time Results**: Instant display of generated entries
-- **Quality Metrics**: Visual quality scores and validation status
-- **Similar Entries**: Shows related vocabulary for context
-- **Raw Output**: Access to generated text for debugging
-
-## 📡 API Endpoints
-
-When running the web application:
-
-- `POST /api/generate` - Generate single vocabulary entry
-- `POST /api/batch-generate` - Generate multiple entries  
-- `POST /api/search` - Search similar vocabulary entries
-- `GET /api/stats` - Get vocabulary statistics
-- `GET /api/health` - System health check
-
-## 🔍 CLI Commands
-
-```bash
-# Generate entries
-python src/cli.py generate "word"
-python src/cli.py batch -w "word1" "word2"
-python src/cli.py batch -f words.txt
-
-# Search and analyze
-python src/cli.py search "word" --limit 5
-python src/cli.py stats
-
-# System management
-python src/cli.py test
-```
-
-## 🧪 Testing
-
-```bash
-# Full system test
-python scripts/test_system.py
-
-# Individual component tests
-python -m pytest tests/
-
-# Quick API test
-python src/cli.py test
-```
-
-## 📋 Requirements
-
-- Python 3.8+
-- AI Hackclub API key (get from https://ai.hackclub.com)
-- Internet connection for API access
-- ~500MB disk space for dependencies and models
-
-## 🎯 Implementation Approach
-
-The system uses the ai.hackclub.com API exclusively with:
-
-1. **Authentic Examples**: Parses real Gulotta entries from sample.txt
-2. **Smart Prompting**: Includes relevant examples in generation prompts  
-3. **Style Consistency**: Templates ensure authentic Gulotta format
-4. **Quality Control**: Validates output against authentic patterns
-5. **Educational Focus**: SAT-appropriate definitions and examples
-
-## 📈 Quality Metrics
-
-The system validates entries on:
-- Required components (pronunciation, definition, mnemonic, picture, example)
-- Mnemonic creativity and appropriateness
-- Picture story engagement and relevance  
-- Example sentence natural usage
-- Overall authenticity to Gulotta style
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
-
-## 📜 License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
-
-## 🔗 Links
-
-- **AI Hackclub**: https://ai.hackclub.com
-- **Charles Gulotta Method**: Based on "500 Key Words for the SAT And How to Remember Them Forever"
-
----
-
-**Built with ❤️ for SAT vocabulary mastery using authentic educational methods and modern AI technology.**#   S A T - V o c a b 
- 
- 
+## Notes
+- Vercel file system is read-only except temporary directories.
+- Feedback persistence is best-effort in serverless; local runs persist to project folders.

@@ -55,3 +55,6 @@ logs/
 temp/
 tmp/
 *.tmp
+
+# Legacy malformed local folder from earlier tree import
+src/api/

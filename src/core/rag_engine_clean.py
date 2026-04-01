@@ -266,6 +266,8 @@ class CleanRAGEngine:
                                     context += f"FOLLOW: {' '.join(example_lines[:3])}\n"
             except Exception as e:
                 logger.error(f"Error reading positive examples: {e}")
+
+        return context
         
     def retrieve_similar_entries(self, query_word: str, top_k: int = 3, similarity_threshold: float = 0.3) -> List[Tuple[VocabularyEntry, float]]:
         """Compatibility method - same as get_similar_entries"""
