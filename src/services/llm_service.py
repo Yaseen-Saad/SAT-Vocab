@@ -1,18 +1,15 @@
 """
-LLM Service for integrating with ai.hackclub.com API
-Provides clean integration with proper error handling, retries, and response processing.
-Optimized for serverless deployment with caching and connection pooling.
+LLM Service for integrating with Hack Club AI API.
+Uses the authenticated proxy endpoint and OpenAI-compatible chat completions.
 """
 
 import os
-import time
 import logging
 import requests
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +32,8 @@ class HackClubLLMService:
     """
     
     def __init__(self, api_key: str = None, base_url: str = None, default_model: str = None):
-        # Hack Club AI doesn't require an API key
-        self.api_key = api_key  # Optional for Hack Club AI
-        self.base_url = base_url or os.getenv('HACKCLUB_API_URL', 'https://ai.hackclub.com')
+        self.api_key = api_key or os.getenv('HACKCLUB_API_KEY', '').strip()
+        self.base_url = base_url or os.getenv('HACKCLUB_API_URL', 'https://ai.hackclub.com/proxy/v1')
         self.default_model = default_model or os.getenv('HACKCLUB_MODEL', 'qwen/qwen3-32b')
         
         # Setup session with retry strategy and connection pooling
@@ -56,14 +52,14 @@ class HackClubLLMService:
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
         
-        # Default headers (no auth needed for Hack Club AI)
+        # Default headers for Hack Club AI authenticated proxy.
         headers = {
             'Content-Type': 'application/json',
             'User-Agent': 'SAT-Vocab-RAG/1.0.0',
             'Accept': 'application/json',
             'Connection': 'keep-alive'
         }
-        if self.api_key:  # Only add auth if API key is provided
+        if self.api_key:
             headers['Authorization'] = f'Bearer {self.api_key}'
         
         self.session.headers.update(headers)
@@ -96,6 +92,16 @@ class HackClubLLMService:
             LLMResponse with the generated content
         """
         try:
+            if not self.api_key:
+                return LLMResponse(
+                    content="",
+                    usage={},
+                    model=model or self.default_model,
+                    finish_reason="error",
+                    success=False,
+                    error="Missing HACKCLUB_API_KEY. Set it in your deployment environment variables."
+                )
+
             # Create cache key
             cache_key = f"{prompt[:100]}_{model or self.default_model}_{temperature}_{max_tokens}"
             
@@ -119,12 +125,13 @@ class HackClubLLMService:
                 **kwargs
             }
             
-            logger.info(f"Making API request to {self.base_url}/chat/completions")
+            endpoint = f"{self.base_url.rstrip('/')}/chat/completions"
+            logger.info(f"Making API request to {endpoint}")
             logger.debug(f"Payload: {payload}")
             
             # Make API request with reduced timeout for serverless
             response = self.session.post(
-                f"{self.base_url}/chat/completions",
+                endpoint,
                 json=payload,
                 timeout=25  # Reduced for serverless constraints
             )

@@ -20,7 +20,7 @@ logging:
 
 # AI Hackclub API Configuration
 hackclub_api:
-  url: https://ai.hackclub.com/v1
+  url: https://ai.hackclub.com/proxy/v1
   model: qwen/qwen3-32b
   timeout: 30
   max_retries: 3

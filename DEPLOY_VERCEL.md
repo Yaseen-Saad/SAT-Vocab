@@ -41,6 +41,17 @@ Follow the prompts:
 4. Vercel will auto-detect the configuration
 5. Click "Deploy"
 
+## Required Environment Variable (Important)
+
+Set this in Vercel Project Settings > Environment Variables:
+
+- `HACKCLUB_API_KEY`: your Hack Club API key from `https://ai.hackclub.com/dashboard`
+
+Notes:
+- The app now uses the authenticated Hack Club proxy endpoint.
+- `HACKCLUB_API_URL` defaults to `https://ai.hackclub.com/proxy/v1`.
+- Do not commit secrets to git. Keep keys only in Vercel environment variables.
+
 ## 🎯 What Happens During Deployment
 
 1. **Vercel reads `vercel.json`** - Our configuration file
@@ -111,6 +122,11 @@ Once connected to GitHub:
 **Function Timeout?**
 - Vercel has 10s limit for hobby plan
 - Consider caching or optimizing slow operations
+
+**403 / token invalid?**
+- Regenerate or recreate your Hack Club API key in the dashboard
+- Confirm `HACKCLUB_API_KEY` is set for the correct environment (Production/Preview)
+- Redeploy after updating the environment variable
 
 ---
 
