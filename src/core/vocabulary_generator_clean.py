@@ -37,7 +37,6 @@ class SimpleVocabularyGenerator:
         
         # Simple word database for better definitions
         self.word_data = {
-            "ANALOGOUS": ("uh-NAH-luh-guss", "adjective", "similar"),
             "REVERE": ("rev-EER", "verb", "to respect and admire deeply"),
             "SERENE": ("suh-REEN", "adjective", "calm and peaceful"),
             "ARDENT": ("AHR-dent", "adjective", "passionate and enthusiastic"),
@@ -58,12 +57,7 @@ class SimpleVocabularyGenerator:
             prompt = self._build_prompt(word, context, avoid_issues)
             
             # Generate response
-            response = self.llm_service.generate_completion(
-                prompt,
-                max_tokens=350,
-                temperature=0.2,
-                system_message="You write concise SAT vocabulary entries with a clear mnemonic, picture story, related forms, and example sentence. Output only the requested five lines with no commentary."
-            )
+            response = self.llm_service.generate_completion(prompt)
 
             if hasattr(response, 'success') and not response.success:
                 logger.error(f"LLM request failed for {word}: {getattr(response, 'error', 'unknown error')}")
@@ -150,14 +144,7 @@ class SimpleVocabularyGenerator:
         if avoid_issues:
             warnings += f"\nFIX THESE ISSUES:\n" + "\n".join(f"- {issue}" for issue in avoid_issues)
         
-        return f"""Create a vocabulary entry in this EXACT format and style:
-
-    REFERENCE FORMAT:
-    WORD (pronunciation) part of speech — short definition
-    Sounds like: mnemonic phrase
-    Picture: vivid 2-3 sentence story
-    Other forms: related form(s)
-    Sentence: natural example sentence
+        return f"""Create a vocabulary entry in this EXACT format:
 
 {word.upper()} ({pronunciation}) {pos} — {definition}
 Sounds like: [something that sounds like the word]
@@ -175,7 +162,7 @@ RULES:
 
 {warnings}
 
-Generate only the 5 lines above, nothing else. Keep it tight, vivid, and easy to remember."""
+Generate only the 5 lines above, nothing else."""
     
     def _get_word_info(self, word: str) -> tuple:
         """Get pronunciation, part of speech, and definition"""
@@ -212,15 +199,6 @@ TEXT TO REFORMAT:
     
     def _parse_entry(self, content: str, word: str) -> GeneratedVocabularyEntry:
         """Parse response into structured entry"""
-        import re
-
-        # Remove common markdown / wrapper formatting that models often add.
-        content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL | re.IGNORECASE)
-        content = re.sub(r'<.*?>', '', content)
-        content = re.sub(r'\*\*(.*?)\*\*', r'\1', content)
-        content = re.sub(r'__(.*?)__', r'\1', content)
-        content = re.sub(r'^\s*[-*•]\s*', '', content, flags=re.MULTILINE)
-
         lines = [line.strip() for line in content.split('\n') if line.strip()]
         
         # Initialize with defaults
@@ -239,9 +217,9 @@ TEXT TO REFORMAT:
         for line in lines:
             if '(' in line and ')' in line and '—' in line:
                 # Main line: WORD (pronunciation) pos — definition
-                match = re.match(r'([A-Za-z][A-Za-z\- ]*)\s*\(([^)]+)\)\s*([A-Za-z.\-]+)\s*[—–-]\s*(.+)', line)
-                if match and match.group(1).strip().lower() == word.strip().lower():
-                    entry.word = match.group(1).strip().upper()
+                match = re.match(r'([A-Z]+)\s*\(([^)]+)\)\s*(\w+)\s*[—–-]\s*(.+)', line)
+                if match:
+                    entry.word = match.group(1)
                     entry.pronunciation = match.group(2)
                     entry.part_of_speech = match.group(3)
                     entry.definition = match.group(4)
@@ -263,18 +241,8 @@ TEXT TO REFORMAT:
         required = [entry.definition, entry.mnemonic_phrase, entry.picture_story, entry.example_sentence]
         if not all(required):
             return False
-
-        # Require a meaningful entry, not a placeholder-style fragment.
-        if len(entry.definition.split()) < 2:
-            return False
-        if len(entry.mnemonic_phrase.split()) < 2:
-            return False
-        if len(entry.picture_story.split()) < 3:
-            return False
-        if len(entry.example_sentence.split()) < 4:
-            return False
         
-        # Example sentence should use the target word naturally.
+        # Check for word usage in example
         if entry.word.lower() not in entry.example_sentence.lower():
             return False
         

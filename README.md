@@ -47,7 +47,7 @@ Run tests:
 
 Optional:
 - HACKCLUB_API_URL (default: https://ai.hackclub.com/proxy/v1)
-- HACKCLUB_MODEL (default: google/gemini-2.5-flash)
+- HACKCLUB_MODEL (default: qwen/qwen3-32b)
 - DEBUG (default: false)
 - ENVIRONMENT (development or production)
 

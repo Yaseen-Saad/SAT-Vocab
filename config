@@ -21,7 +21,7 @@ logging:
 # AI Hackclub API Configuration
 hackclub_api:
   url: https://ai.hackclub.com/proxy/v1
-  model: google/gemini-2.5-flash
+  model: qwen/qwen3-32b
   timeout: 30
   max_retries: 3
   max_tokens: 1000
